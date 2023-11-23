@@ -4,6 +4,14 @@ const aqiModel = require('../models/aqi_inModel')
 const axios = require("axios");
 const url = require('url');
 const fetch = require('node-fetch-commonjs');
+const fs = require('fs');
+const csv = require('csv-parser');
+const translate = require('translate-google');
+
+const onlyAlphabetsRegex = /^[a-zA-Z\s]+$/;
+
+// specifying the path of csv file
+const csvFilePath = "C:\\Users\\lenovo\\Downloads\\AqicnLocations.csv";
 
 const apiKey = '3867a440cd664d9f870fbadab4509ad4';
 const arrayOfUid = [];
@@ -14,12 +22,13 @@ const reverseGeoCode = async function (latitude, longitude) {
     try {
         const response = await fetch(apiUrl);
         const data = await response.json();
-        // console.log(data);
-        // console.log(data.results[0]);
+        console.log(data);
+        console.log(data.results[0]);
         if (data.results.length > 0) {
             const result = data.results[0];
+
             const city = result.components.city;
-            const state = result.components.state_district;
+            const state = result.components.state;
             const country = result.components.country;
 
             const cityStateCountry = {
@@ -51,10 +60,11 @@ const requestFunction = async function (req, res) {
         const finalUrl = apiUrl.replace('{pathParam}', pathParamValue);
         console.log(finalUrl);
         const storeData = await axios.get(finalUrl);
+        // console.log(storeData);
         const dataFromAPI = storeData.data;
         console.log(dataFromAPI);
         // console.log(dataFromAPI.data);
-
+        return res.status(201).send({ status: false, message: storeData })
         // checking if we are getting pm10 from third party api, if not then setting the value of pm10 to null
         let pm10 = null;
         if (dataFromAPI.data.iaqi.hasOwnProperty('pm10')) {
@@ -63,14 +73,14 @@ const requestFunction = async function (req, res) {
         }
         // checkingif we are getting pm25 from third party api, if not then setting the value of pm25 to null 
         let pm25 = null;
-        console.log(dataFromAPI.data.iaqi);
+        // console.log(dataFromAPI.data.iaqi);
         if (dataFromAPI.data.iaqi.hasOwnProperty('pm25')) {
             // console.log("pm25 key hai");
             pm25 = dataFromAPI.data.iaqi.pm25.v;
         }
         // checking if we are getting temperature from third party API, if not then setting the value of temprature to null
         let temp = null;
-        console.log(dataFromAPI.data.iaqi);
+        // console.log(dataFromAPI.data.iaqi);
         if (dataFromAPI.data.iaqi.hasOwnProperty('t')) {
             // console.log("temperature key hai");
             temp = dataFromAPI.data.iaqi.t.v;
@@ -101,7 +111,7 @@ const requestFunction = async function (req, res) {
             Humidity: humidity,
             Time: dataFromAPI.data.time.s
         }
-        console.log(finalData)
+        // console.log(finalData)
 
         // store the data in mongoDB database
         const createData = await aqiModel.create(finalData);
@@ -194,4 +204,123 @@ const locationOnTheMap = async function (req, res) {
     }
 };
 
-module.exports = { requestFunction, geolocalisedFeed, locationOnTheMap };
+// get locations based on latitude and longitude
+const getLocations = async function (req, res) {
+    try {
+        const latitude = req.body.latitude;
+        const longitude = req.body.longitude;
+
+        console.log("latitude is", latitude, "and longitude is", longitude);
+        const latLon = await reverseGeoCode(latitude, longitude);
+        console.log(latLon);
+        return res.status(200).send({ status: false, message: "API running successfully" });
+    }
+    catch (error) {
+        return res.status(500).send({ status: true, message: error.message });
+    }
+}
+
+// retrieving data from csv file
+const getCsvData = async function (req, res) {
+    try {
+        // creating an array to store the parsed data
+        const data = [];
+
+        // printing the file path of CSV file on console
+        console.log("File path of CSV is:", csvFilePath)
+
+        // using the fs module to store the parsed data
+        fs.createReadStream(csvFilePath)
+            .pipe(csv())
+            .on('data', (row) => {
+                // we will build our logic here
+                const latitude = row.lat;
+                const longitude = row.lon;
+                const latLonObj = {
+                    latitude,
+                    longitude
+                }
+                console.log("printing the data in each row", row);
+                // data.push(row);
+            })
+            .on('end', () => {
+                console.log('CSV file successfully processed');
+                // Now we can work with the 'data' array to work with the parsed CSV data
+                // console.log(data);
+            })
+            .on('error', (error) => {
+                // Handles the errors that occured during parsing process
+                console.error('Error parsing CSV:', error.message);
+            })
+
+        return res.status(200).send({ status: true, message: "API running successfully" });
+    }
+    catch (error) {
+        return res.status(500).send({ status: false, message: error.message });
+    }
+}
+
+// retrieving locations from CSV containing special characters
+const specialCharacterLocations = async function (req, res) {
+    try {
+
+        // const fullName = req.body.fullName;
+        // const isValidName = onlyAlphabetsRegex.test(fullName)
+
+        // creating an array to store the parsed data
+        const data = [];
+        const locName = [];
+
+        // printing the file path of CSV file on console
+        console.log("File path of CSV is:", csvFilePath)
+
+        // using the fs module to store the parsed data
+        fs.createReadStream(csvFilePath)
+            .pipe(csv())
+            .on('data', (row) => {
+                // we will build our logic here
+                const obj = {
+                    uid:row.uid,
+                    locationName:row.locationName
+                }
+                if (!(onlyAlphabetsRegex.test(row.locationName))) {
+                    locName.push(obj);
+                }
+                // data.push(row);
+            })
+            .on('end', () => {
+                console.log('CSV file successfully processed');
+                // Now we can work with the 'data' array to work with the parsed CSV data
+                // console.log(data);
+                console.log(locName);
+                return res.status(200).send({ status: true, message: "API running successfully", data: locName });
+            })
+            .on('error', (error) => {
+                // Handles the errors that occured during parsing process
+                console.error('Error parsing CSV:', error.message);
+                return res.status(500).send({ status: false, message: error.message });
+            })
+    }
+    catch (error) {
+        return res.status(500).send({ status: false, message: error.message });
+    }
+}
+
+const translator = async function(req,res){
+    try{
+        const originalString = req.body.originalString;
+        const englishString = await translate(originalString,{to:'en'});
+        console.log("Original string:",originalString);
+        console.log("converted String:",englishString);
+
+        return res.status(201).send({status:true,message:"String converted to english successfully",data:englishString});
+    }
+    catch(error){
+        return res.status(500).send({status:false,message:error.message});
+    }
+}
+
+module.exports = {
+    requestFunction, geolocalisedFeed, locationOnTheMap, getLocations, getCsvData,
+    specialCharacterLocations, translator
+};

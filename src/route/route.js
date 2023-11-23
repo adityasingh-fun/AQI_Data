@@ -25,6 +25,18 @@ router.post('/registerUser',userController.regiterUser);
 // API to login a user
 router.post('/loginUser',userController.loginUser);
 
+// API to get location based on latitude and longitude
+router.post('/getLocationsBasedOnLatLon',requestController.getLocations);
+
+// API to retrive data from csv 
+router.get('/gettingcsvData',requestController.getCsvData);
+
+// API to retrieve the locations which contains special characters
+router.get('/getSpecialCharacterLocations',requestController.specialCharacterLocations);
+
+// API to translate any language to english
+router.post('/convertToEnglish',requestController.translator)
+
 // scheduling the task to run on the server
 cron.schedule('0 * * * *',automaticController.scheduledTask);
 
