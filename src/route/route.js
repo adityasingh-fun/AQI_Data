@@ -35,9 +35,21 @@ router.get('/gettingcsvData',requestController.getCsvData);
 router.get('/getSpecialCharacterLocations',requestController.specialCharacterLocations);
 
 // API to translate any language to english
-router.post('/convertToEnglish',requestController.translator)
+router.post('/convertToEnglish',requestController.translator);
+
+// API to write data in a csv file
+router.get('/writingDataInCSV',requestController.writingInCsv)
+
+// API to retrieve data from a CSV file, read the values of a row, then translate each data point to english
+// and then again create a csv file
+router.get('/convertingCsvToEnglish',requestController.convertingTheCsv);
+
+router.get('/testerApi',requestController.testerfunction);
+
+// Testing locations
+router.post('/locationTesting',requestController.locationTesting);
 
 // scheduling the task to run on the server
-cron.schedule('0 * * * *',automaticController.scheduledTask);
+// cron.schedule('0 * * * *',automaticController.scheduledTask);
 
 module.exports = router;
