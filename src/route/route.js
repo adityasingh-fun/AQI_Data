@@ -49,6 +49,14 @@ router.get('/testerApi',requestController.testerfunction);
 // Testing locations
 router.post('/locationTesting',requestController.locationTesting);
 
+// API to get same city and state names
+router.get('/sameCityAndStateName',requestController.sameCityAndStateName);
+
+router.get('/testerFunction2',requestController.testerFunction2);
+
+// API to get different city and state names
+router.get('/differentCityAndStateName',requestController.differentCityAndStateName);
+
 // scheduling the task to run on the server
 // cron.schedule('0 * * * *',automaticController.scheduledTask);
 

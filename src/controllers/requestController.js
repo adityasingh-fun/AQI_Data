@@ -12,13 +12,25 @@ const createCsvWriter = require('csv-writer').createObjectCsvWriter;
 const onlyAlphabetsRegex = /^[a-zA-Z\s]+$/;
 
 // specifying the path of csv file
-const csvFilePath = "C:\\Users\\lenovo\\Downloads\\sandy69.csv";
+const csvFilePath = "C:\\Users\\lenovo\\Downloads\\sandy133.csv";
 
-const apiKey = '3867a440cd664d9f870fbadab4509ad4';
+// const apiKey = '3867a440cd664d9f870fbadab4509ad4';
+// const apiKey = '54c89c0714364c86a668eefe81d9bba1';
+// const apiKey = '4be0afd943ab44388c12a28b11b3fc3b';
+// const apiKey = 'e323bf3e57b54cb7822ff59240428a4d';
 // const apiKey = '8b18ed393f034c419df8318dd4b3f421';
 // const apiKey = 'b8cb2f9434124ca5ad54b6bd1861d624';
 // const apiKey = '263a61fbbebc414a8ef4d5a748708433';
+// const apiKey = '9fc88538f0fc4ab686851c8e0427a88f';
+// const apiKey = '1e55028d4cfa458588d7b4ffad43eb8d';
+// const apiKey = '599f4f7ea85642108a415bf54f36529e';
+// const apiKey = 'b1a9982b6da04504b8bbdfbc6743e98b';
+// const apiKey = 'a283c78224704de9b4c2bec2037142ac';
+// const apiKey = '039e1c2831a14fd49272058d19c34871';
+const apiKey = 'fed65fb6e20d4bbabc3d0acde39a7b9f';
+
 // const apiKey = '70c5c589a9b648cebb82f36b572406b0';
+// const apiKey = '6783f0089e834abe8703d00fd75022a9';
 
 const arrayOfUid = [];
 console.log("size of array is", arrayOfUid.length);
@@ -132,14 +144,14 @@ const reverseGeoCode2 = async function (latitude, longitude) {
             else if (result.components.hasOwnProperty('suburb')) {
                 locationName = result.components.suburb;
             }
-            else{
+            else {
                 locationName = null;
             }
 
-            if(locationName == "unnamed road"){
+            if (locationName == "unnamed road") {
                 locationName = result.components.suburb;
             }
-            const stationName = `${locationName},${city},${state},${country}`
+            const stationName = `${locationName},${city},${state},${country}`;
 
 
             const cityStateCountry = {
@@ -160,6 +172,30 @@ const reverseGeoCode2 = async function (latitude, longitude) {
     catch (error) {
         // return res.status(500).send({status:false,message:error.message});
         console.log("message:", error.message);
+    }
+}
+
+// This reverse geoCode function is to get the county only
+const reverseGeoCode3 = async function (latitude, longitude) {
+    const apiUrl = `https://api.opencagedata.com/geocode/v1/json?q=${latitude}+${longitude}&key=${apiKey}`;
+    try {
+        const response = await fetch(apiUrl);
+        const data = await response.json();
+        if (data.results.length > 0) {
+            const result = data.results[0];
+            let city = null;
+            city = result.components.suburb;
+            if(city == null){
+                city = result.components.city_district;
+            }
+            return city;
+        }
+        else {
+            return null;
+        }
+    }
+    catch (error) {
+        return res.status(500).send({ status: false, message: error.message });
     }
 }
 
@@ -568,7 +604,7 @@ const testerfunction = async function (req, res) {
 
         // writing data in CSV file
         const csvWriter = createCsvWriter({
-            path: "C:\\Users\\lenovo\\Downloads\\mandy69.csv",
+            path: "C:\\Users\\lenovo\\Downloads\\mandy133.csv",
             header: [
                 { id: "uid", title: "uid" },
                 { id: "locationName", title: "locationName" },
@@ -591,6 +627,70 @@ const testerfunction = async function (req, res) {
     }
 };
 
+const testerFunction2 = async function (req, res) {
+    try {
+        // creating array to store parsed data
+        const data = [];
+
+        // printing the file path on console
+        const csvFilePath = 'C:\\Users\\lenovo\\Downloads\\master.csv';
+
+        console.log("File path for the csv file is", csvFilePath);
+
+        let instream;
+        instream = fs.createReadStream(csvFilePath);
+        const readable = instream.pipe(csv());
+
+        for await (const record of readable) {
+            const lat = record.lat;
+            const lon = record.lon;
+            const uid = record.uid;
+            const locationName = record.locationName;
+            const cityName = await reverseGeoCode3(lat, lon);
+            const country = record.country;
+            const stateName = record.stateName;
+            const stationName = `${locationName},${cityName},${stateName},${country}`;
+
+            const completeObj = {
+                uid,
+                locationName,
+                stationName,
+                cityName,
+                stateName,
+                country,
+                lat,
+                lon
+            };
+            console.log("The object is as follows:", completeObj)
+            // console.log("printing the data in each row", row);
+            data.push(completeObj);
+        }
+
+        // Writing data in csv
+        const csvWriter = createCsvWriter({
+            path: "C:\\Users\\lenovo\\Downloads\\newFile.csv",
+            header: [
+                { id: "uid", title: "uid" },
+                { id: "locationName", title: "locationName" },
+                { id: "stationName", title: "stationName" },
+                { id: "cityName", title: "cityName" },
+                { id: "stateName", title: "stateName" },
+                { id: "country", title: "country" },
+                { id: "lat", title: "lat" },
+                { id: "lon", title: "lon" }
+            ]
+        });
+
+        csvWriter.writeRecords(data)
+            .then(() => console.log("csv written successfully"))
+            .catch(err => console.error("Error writing csv file", err))
+        return res.status(200).send({ status: true, message: "API running successfully", });
+    }
+    catch (error) {
+        return res.status(500).send({ status: false, message: error.message });
+    }
+}
+
 const locationTesting = async function (req, res) {
     try {
         const lat = req.body.latitude;
@@ -606,8 +706,146 @@ const locationTesting = async function (req, res) {
     }
 }
 
+const sameCityAndStateName = async function (req, res) {
+    try {
+        // creating data array to store parsed data
+        const data = [];
+
+        // Displaying the file path on console
+        const csvFilePath = 'C:\\Users\\lenovo\\Downloads\\final19.csv';
+
+        console.log("File path for the csv file is", csvFilePath);
+
+        let instream;
+        instream = fs.createReadStream(csvFilePath);
+        const readable = instream.pipe(csv());
+        let count = 0;
+        for await (const record of readable) {
+
+            const uid = record.uid;
+            const locationName = record.locationName;
+            const stationName = record.stationName;
+            const cityName = record.cityName;
+            const stateName = record.stateName;
+            const country = record.country;
+            const lat = record.lat;
+            const lon = record.lon;
+
+            const objData = {
+                uid,
+                locationName,
+                stationName,
+                cityName,
+                stateName,
+                country,
+                lat,
+                lon
+            }
+            if (cityName == stateName) {
+                count++;
+                // console.log("Location with same city and state name", objData);
+                data.push(objData);
+            }
+        }
+        // console.log("Final data is here", data);
+        console.log("Number of loactions with same city and state names are", count);
+
+        // Writing data in csv
+        const csvWriter = createCsvWriter({
+            path: "C:\\Users\\lenovo\\Downloads\\differentCityAndStateName.csv",
+            header: [
+                { id: "uid", title: "uid" },
+                { id: "locationName", title: "locationName" },
+                { id: "stationName", title: "stationName" },
+                { id: "cityName", title: "cityName" },
+                { id: "stateName", title: "stateName" },
+                { id: "country", title: "country" },
+                { id: "lat", title: "lat" },
+                { id: "lon", title: "lon" }
+            ]
+        });
+
+        csvWriter.writeRecords(data)
+            .then(() => console.log("csv written successfully"))
+            .catch(err => console.error("Error writing csv file", err))
+        return res.status(200).send({ status: true, message: "API running successfully", });
+    }
+    catch (error) {
+        return res.status(500).send({ status: false, message: error.message });
+    }
+};
+
+const differentCityAndStateName = async function (req, res) {
+    try {
+        // creating data array to store parsed data
+        const data = [];
+
+        // Displaying the file path on console
+        const csvFilePath = 'C:\\Users\\lenovo\\Downloads\\final19.csv';
+
+        console.log("File path for the csv file is", csvFilePath);
+
+        let instream;
+        instream = fs.createReadStream(csvFilePath);
+        const readable = instream.pipe(csv());
+        let count = 0;
+        for await (const record of readable) {
+
+            const uid = record.uid;
+            const locationName = record.locationName;
+            const stationName = record.stationName;
+            const cityName = record.cityName;
+            const stateName = record.stateName;
+            const country = record.country;
+            const lat = record.lat;
+            const lon = record.lon;
+
+            const objData = {
+                uid,
+                locationName,
+                stationName,
+                cityName,
+                stateName,
+                country,
+                lat,
+                lon
+            }
+            if (cityName != stateName) {
+                count++;
+                // console.log("Location with same city and state name", objData);
+                data.push(objData);
+            }
+        }
+        // console.log("Final data is here", data);
+        console.log("Number of loactions with same city and state names are", count);
+
+        // Writing data in csv
+        const csvWriter = createCsvWriter({
+            path: "C:\\Users\\lenovo\\Downloads\\different2CityAndStateName.csv",
+            header: [
+                { id: "uid", title: "uid" },
+                { id: "locationName", title: "locationName" },
+                { id: "stationName", title: "stationName" },
+                { id: "cityName", title: "cityName" },
+                { id: "stateName", title: "stateName" },
+                { id: "country", title: "country" },
+                { id: "lat", title: "lat" },
+                { id: "lon", title: "lon" }
+            ]
+        });
+
+        csvWriter.writeRecords(data)
+            .then(() => console.log("csv written successfully"))
+            .catch(err => console.error("Error writing csv file", err))
+        return res.status(200).send({ status: true, message: "API running successfully", });
+    }
+    catch (error) {
+        return res.status(500).send({ status: false, message: error.message });
+    }
+};
+
 module.exports = {
     requestFunction, geolocalisedFeed, locationOnTheMap, getLocations, getCsvData,
     specialCharacterLocations, translator, writingInCsv, convertingTheCsv, testerfunction,
-    locationTesting
+    locationTesting, sameCityAndStateName, differentCityAndStateName, testerFunction2
 };
