@@ -2,38 +2,47 @@ const mongoose = require('mongoose');
 const {Schema} = mongoose;
 
 const aqiSchema = new mongoose.Schema({
-    SerialNo: {
+    Uid: {
         type: Number
     },
-    location: {
+    LocationName: {
         type: String
     },
-    City: {
+    AQI: {
+        type: mongoose.Schema.Types.Mixed
+    },
+    DominentPollutent: {
+        type: mongoose.Schema.Types.Mixed
+    },
+    PM10: {
+        type: mongoose.Schema.Types.Mixed
+    },
+    PM25: {
+        type: mongoose.Schema.Types.Mixed
+    },
+    Temperartue: {
+        type: mongoose.Schema.Types.Mixed
+    },
+    Humidity: {
+        type: mongoose.Schema.Types.Mixed
+    },
+    StationName: {
         type: String
     },
-    State: {
+    CityName: {
+        type: String
+    },
+    StateName: {
         type: String
     },
     Country: {
         type: String
     },
-    AQI_IN: {
-        type: mongoose.Schema.Types.Mixed
-    },
-    PM25: {
+    latitude: {
         type: Number
     },
-    PM10: {
+    longitude: {
         type: Number
-    },
-    Temp: {
-        type: Number
-    },
-    Humidity: {
-        type: Number
-    },
-    Time:{
-        type: Date
     }
 },{timestamps:true});
 

@@ -13,6 +13,21 @@ router.post('/testingAPI',testController.testFunction);
 // city/station feed API
 router.post('/getRequest',requestController.requestFunction);
 
+// storing data in db based on uid
+router.get('/gettingAQIOfStations',requestController.gettingAQIOfStations);
+
+// tester function for storing AQI that is not given by the API
+router.get('/tester3',requestController.tester3);
+
+// creating NoSQL database using latitude and longitude
+router.get('/tester4',requestController.tester4);
+
+// checking dupilicate entries in the database
+router.get('/tester5',requestController.tester5);
+
+// Iterating over each element of the collection
+router.get('/functionForIterating',requestController.functionForIteratingOverEachDocument);
+
 // geolocalised API
 router.post('/geolocalisedFeed',requestController.geolocalisedFeed);
 
