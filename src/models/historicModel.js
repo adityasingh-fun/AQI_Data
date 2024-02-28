@@ -2,7 +2,7 @@ const { Timestamp } = require('mongodb');
 const mongoose = require('mongoose');
 const {Schema} = mongoose;
 
-const aqiSchema = new mongoose.Schema({
+const historicSchema = new mongoose.Schema({
     Uid: {
         type: Number
     },
@@ -50,4 +50,4 @@ const aqiSchema = new mongoose.Schema({
     }
 },{timestamps:true});
 
-module.exports = mongoose.model('AQI', aqiSchema);
+module.exports = mongoose.model('Historic_Data', historicSchema);

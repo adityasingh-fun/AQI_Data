@@ -72,6 +72,12 @@ router.get('/testerFunction2',requestController.testerFunction2);
 // API to get different city and state names
 router.get('/differentCityAndStateName',requestController.differentCityAndStateName);
 
+// API to convert timestamp into date and time
+router.get('/timestampToDateAndTime',requestController.timestampToDateAndTime)
+
+// API to create historic collectiona and realtime collection in a database simultaneously
+router.get('/historicAndrealtimeDatabase',requestController.tester6);
+
 // scheduling the task to run on the server
 // cron.schedule('0 * * * *',automaticController.scheduledTask);
 

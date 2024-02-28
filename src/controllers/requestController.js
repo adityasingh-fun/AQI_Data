@@ -8,7 +8,9 @@ const fs = require('fs');
 const csv = require('csv-parser');
 const translate = require('translate-google');
 const createCsvWriter = require('csv-writer').createObjectCsvWriter;
-const circularJSON = require('circular-json');
+// const circularJSON = require('circular-json');
+const moment = require('moment-timezone');
+const historicModel = require('../models/historicModel.js');
 
 const onlyAlphabetsRegex = /^[a-zA-Z\s]+$/;
 
@@ -584,7 +586,7 @@ const tester4 = async function (req, res) {
         const arrayForStoringParsedData = [];
 
         // Displaying the file path on console
-        const csvFilePath = 'C:\\Users\\lenovo\\Downloads\\IndiaLocations.csv';
+        const csvFilePath = 'C:\\Users\\lenovo\\Downloads\\candie4.csv';
         console.log("File path of csv is", csvFilePath);
 
         let instream;
@@ -618,7 +620,7 @@ const tester4 = async function (req, res) {
             console.log(storeData.data);
 
             const dataFromAPI = storeData.data;
-            
+
             let PM10 = null;
             if (dataFromAPI.data.iaqi.hasOwnProperty('pm10')) {
                 // console.log("pm10 key hai");
@@ -647,7 +649,7 @@ const tester4 = async function (req, res) {
             else {
                 Temperartue = "NA";
             }
-            
+
 
             let Humidity = null;
             if (dataFromAPI.data.iaqi.hasOwnProperty('h')) {
@@ -657,6 +659,10 @@ const tester4 = async function (req, res) {
             else {
                 Humidity = "NA";
             }
+
+            // let time = dataFromAPI.data.time.iso;
+            const isoDateTime = dataFromAPI.data.time.iso;
+            const time = moment.tz(isoDateTime, 'Asia/Kolkata').format('YYYY-MM-DD HH:mm:ss');
 
             let DominentPollutent = null;
             if (dataFromAPI.data.hasOwnProperty('dominentpol')) {
@@ -723,7 +729,8 @@ const tester4 = async function (req, res) {
                 StateName,
                 Country,
                 latitude,
-                longitude
+                longitude,
+                time
             };
             const createData = await aqiModel.create(completeObj);
             console.log("The object is as follows:", createData)
@@ -783,8 +790,8 @@ const tester5 = async function (req, res) {
         }
 
         console.log(map);
-        for(let pairs of map){
-            if(pairs[1]>1){
+        for (let pairs of map) {
+            if (pairs[1] > 1) {
                 arr.push(pairs[0]);
             }
         }
@@ -797,18 +804,230 @@ const tester5 = async function (req, res) {
     }
 }
 
+// function to create realtime table along with historic table
+const tester6 = async function (req, res) {
+    try {
+        // getting URL from third party API
+        const originalUrl = 'https://api.waqi.info/feed/geo:10.3;20.7/?token=7124b219cbdffcfa7e30e4e0745bc252b445fb2f';
+
+        // console.log(parsedUrl);
+
+        // array to store parsed data from csv file
+        const arrayForStoringParsedData = [];
+
+        // Displaying the file path on console
+        const csvFilePath = 'C:\\Users\\lenovo\\Downloads\\candie5.csv';
+        console.log("File path of csv is", csvFilePath);
+
+        let instream;
+        instream = fs.createReadStream(csvFilePath);
+        const readable = instream.pipe(csv());
+
+        for await (const record of readable) {
+            const Uid = record.uid;
+            const latitude = record.lat;
+            const longitude = record.lon;
+            const LocationName = record.locationName;
+            const CityName = record.cityName;
+            const Country = record.country;
+            const StateName = record.stateName;
+            const StationName = record.stationName;
+
+            // parse the url
+            const parsedUrl = new URL(originalUrl);
+
+            // setting the latitude and longitude in the url
+            const newUrl = `feed/geo:${latitude};${longitude}/`;
+
+            // update the path in parsed url
+            parsedUrl.pathname = newUrl;
+
+            // convert the original url back to string
+            const finalUrl = parsedUrl.toString();
+            console.log(finalUrl);
+
+            const storeData = await axios.get(finalUrl);
+            console.log(storeData.data);
+
+            const dataFromAPI = storeData.data;
+
+            let PM10 = null;
+            if (dataFromAPI.data.iaqi.hasOwnProperty('pm10')) {
+                // console.log("pm10 key hai");
+                PM10 = dataFromAPI.data.iaqi.pm10.v;
+            }
+            else {
+                PM10 = "NA";
+            }
+
+            let PM25 = null;
+            // console.log(dataFromAPI.data.iaqi);
+            if (dataFromAPI.data.iaqi.hasOwnProperty('pm25')) {
+                // console.log("pm25 key hai");
+                PM25 = dataFromAPI.data.iaqi.pm25.v;
+            }
+            else {
+                PM25 = "NA";
+            }
+
+            let Temperartue = null;
+            // console.log(dataFromAPI.data.iaqi);
+            if (dataFromAPI.data.iaqi.hasOwnProperty('t')) {
+                // console.log("temperature key hai");
+                Temperartue = dataFromAPI.data.iaqi.t.v;
+            }
+            else {
+                Temperartue = "NA";
+            }
+
+
+            let Humidity = null;
+            if (dataFromAPI.data.iaqi.hasOwnProperty('h')) {
+                // console.log("humidity key hai");
+                Humidity = dataFromAPI.data.iaqi.h.v;
+            }
+            else {
+                Humidity = "NA";
+            }
+
+            // let time = dataFromAPI.data.time.iso;
+            const isoDateTime = dataFromAPI.data.time.iso;
+            const time = moment.tz(isoDateTime, 'Asia/Kolkata').format('YYYY-MM-DD HH:mm:ss');
+
+            let DominentPollutent = null;
+            if (dataFromAPI.data.hasOwnProperty('dominentpol')) {
+                DominentPollutent = dataFromAPI.data.dominentpol;
+            }
+            else {
+                DominentPollutent = "NA";
+            }
+            if (DominentPollutent == '') {
+                if (PM10 !== "NA" && PM25 !== "NA") {
+                    // DominentPollutent = "Not Available";
+                    if (PM10 > PM25) {
+                        DominentPollutent = PM10;
+                    }
+                    else {
+                        DominentPollutent = PM25;
+                    }
+                }
+                else if (PM10 == "NA" && PM25 != "NA") {
+                    DominentPollutent = "pm25";
+                }
+                else if (PM10 != "NA" && PM25 == "NA") {
+                    DominentPollutent = "pm10";
+                }
+                else {
+                    DominentPollutent = "NA";
+                }
+            }
+
+            let AQI = null;
+            if (dataFromAPI.data.hasOwnProperty('aqi')) {
+                AQI = dataFromAPI.data.aqi;
+            }
+            else {
+                AQI = "NA";
+            }
+
+            if (AQI == '-') {
+                if (PM10 != "NA" && PM25 != "NA") {
+                    AQI = Math.max(PM10, PM25);
+                }
+                else if (PM10 == "NA" && PM25 != "NA") {
+                    AQI = PM25;
+                }
+                else if (PM10 != "NA" && PM25 == "NA") {
+                    AQI = PM10;
+                }
+                else {
+                    AQI = "NA"
+                }
+            }
+
+            const completeObj = {
+                Uid,
+                LocationName,
+                AQI,
+                DominentPollutent,
+                PM10,
+                PM25,
+                Temperartue,
+                Humidity,
+                StationName,
+                CityName,
+                StateName,
+                Country,
+                latitude,
+                longitude,
+                time
+            };
+            const createData = await aqiModel.create(completeObj);
+            console.log("The object is as follows:", createData)
+            // console.log("printing the data in each row", row);
+            arrayForStoringParsedData.push(completeObj);
+        }
+
+        const result = await historicModel.insertMany(arrayForStoringParsedData);
+        console.log(result);
+
+        // Writing data in csv
+        const csvWriter = createCsvWriter({
+            path: "C:\\Users\\lenovo\\Downloads\\creatingNewFile.csv",
+            header: [
+                { id: "Uid", title: "Uid" },
+                { id: "LocationName", title: "LocationName" },
+                { id: "AQI", title: "AQI" },
+                { id: "DominentPollutent", title: "DominentPollutent" },
+                { id: "PM10", title: "PM10" },
+                { id: "PM25", title: "PM25" },
+                { id: "Temperartue", title: "Temperartue" },
+                { id: "Humidity", title: "Humidity" },
+                { id: "StationName", title: "StationName" },
+                { id: "CityName", title: "CityName" },
+                { id: "StateName", title: "StateName" },
+                { id: "Country", title: "Country" },
+                { id: "latitude", title: "latitude" },
+                { id: "longitude", title: "longitude" }
+            ]
+        });
+
+        csvWriter.writeRecords(arrayForStoringParsedData)
+            .then(() => console.log("csv written successfully"))
+            .catch(err => console.error("Error writing csv file", err))
+        // console.log(arrayForStoringParsedData);
+        return res.status(200).send({ status: false, message: "API running successfully" });
+    }
+    catch (error) {
+        return res.status(500).send({ status: false, message: error.message });
+    }
+}
+
+// function to convert timestamp to date and time
+const timestampToDateAndTime = async function (req, res) {
+    try {
+        const isoDateTime = "2024-02-20T05:00:00-06:00";
+        const istDateTime = moment.tz(isoDateTime, 'Asia/Kolkata').format('YYYY-MM-DD HH:mm:ss');
+        console.log(istDateTime)
+        return res.status(200).send({ status: true, message: "API running successfully" });
+    }
+    catch (error) {
+        return res.status(500).send({ status: false, message: error.message });
+    }
+}
+
 // function to iterate over each element of the array
-const functionForIteratingOverEachDocument = async function(req,res){
-    try{
-        for await (const document of aqiModel.find()){
+const functionForIteratingOverEachDocument = async function (req, res) {
+    try {
+        for await (const document of aqiModel.find()) {
             console.log(document);
         }
-        return res.status(200).send({status:false,message:"Printing all documents of the collection"})
+        return res.status(200).send({ status: false, message: "Printing all documents of the collection" })
     }
-    catch(error){
-        res.status(500).send({status:false,message:ErrorEvent.message});
+    catch (error) {
+        res.status(500).send({ status: false, message: ErrorEvent.message });
     }
-} 
+}
 
 // setInterval(requestFunction,2000);
 
@@ -1395,5 +1614,6 @@ module.exports = {
     requestFunction, geolocalisedFeed, locationOnTheMap, getLocations, getCsvData,
     specialCharacterLocations, translator, writingInCsv, convertingTheCsv, testerfunction,
     locationTesting, sameCityAndStateName, differentCityAndStateName, testerFunction2,
-    gettingAQIOfStations, tester3, tester4, tester5, functionForIteratingOverEachDocument
+    gettingAQIOfStations, tester3, tester4, tester5, functionForIteratingOverEachDocument,
+    timestampToDateAndTime, tester6
 };

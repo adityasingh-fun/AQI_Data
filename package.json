@@ -27,7 +27,7 @@
     "cron19": "node src/cronjobs/cronjob19.js",
     "cron20": "node src/cronjobs/cronjob20.js",
     "cron21": "node src/cronjobs/cronjob21.js",
-    "start": "npm-run-all --parallel index cron1 cron2 cron3 cron4 cron5 cron6 cron7 cron8 cron9 cron10 cron11 cron12 cron13 cron14 cron15 cron16 cron17 cron18 cron19 cron20 cron21"
+    "start": "npm-run-all --parallel index cron1 cron2 cron3 cron4 cron5 cron6 cron7 cron8 cron9 cron10 cron11 cron12 cron13 cron14 cron15 cron16 cron17 cron18 cron19 cron20 cron21 "
   },
   "keywords": [],
   "author": "",
@@ -43,6 +43,7 @@
     "express": "^4.18.2",
     "fs": "^0.0.1-security",
     "json2html": "^0.0.8",
+    "moment-timezone": "^0.5.45",
     "mongodb": "^6.1.0",
     "mongoose": "^7.6.1",
     "node-cron": "^3.0.2",
